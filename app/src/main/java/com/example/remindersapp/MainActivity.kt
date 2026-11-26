@@ -4,9 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -19,7 +18,6 @@ object Routes {
     const val LIST = "reminder_list"
     const val CREATE = "reminder_create"
     const val DETAIL = "reminder_detail/{reminderId}"
-
     fun detailRoute(reminderId: Int) = "reminder_detail/$reminderId"
 }
 
@@ -27,12 +25,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
+            val sharedViewModel: ReminderViewModel = viewModel()
+            val prefs by sharedViewModel.userPreferences.collectAsState()
+
+            val colorScheme = if (prefs.isDarkTheme) darkColorScheme() else lightColorScheme()
+
+            MaterialTheme(colorScheme = colorScheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    RemindersAppNavigation()
+                    RemindersAppNavigation(sharedViewModel)
                 }
             }
         }
@@ -40,14 +43,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun RemindersAppNavigation() {
+fun RemindersAppNavigation(sharedViewModel: ReminderViewModel) {
     val navController = rememberNavController()
-    val sharedViewModel: ReminderViewModel = viewModel()
 
-    NavHost(
-        navController = navController,
-        startDestination = Routes.LIST
-    ) {
+    NavHost(navController = navController, startDestination = Routes.LIST) {
         composable(Routes.LIST) {
             ReminderListScreen(
                 viewModel = sharedViewModel,
@@ -55,7 +54,6 @@ fun RemindersAppNavigation() {
                 onRecordatorioClick = { id -> navController.navigate(Routes.detailRoute(id)) }
             )
         }
-
         composable(Routes.CREATE) {
             ReminderCreateScreen(
                 viewModel = sharedViewModel,
@@ -63,7 +61,6 @@ fun RemindersAppNavigation() {
                 onCancelar = { navController.popBackStack() }
             )
         }
-
         composable(
             route = Routes.DETAIL,
             arguments = listOf(navArgument("reminderId") { type = NavType.IntType })
